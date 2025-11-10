@@ -31,19 +31,60 @@ class CustomRBC(BasicRBC):
 
                 if 'electrical_storage' in n:
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        '''
+                        Goal:
+                            Ottimizzare l'utilizzo delle batterie con lo scopo di ridurre
+                            i costi e massimizzare l'efficenza.
+                        Logica:
+                            Dalle 8 alle 18 (fascia oraria nella quale la domanda di energia
+                            è più alta) vengono scaricate le batterie.
+                            Al di fuori di questa fascia oraria le batterie vengono caricate.
+                        '''
+
+                        if 8 <= hour <= 18:
+                            value = 0.9 # Stato di massima efficienza.
+                        else:
+                            value = 0.1 # Stato di minimo sforzo.
 
                         action_map[n][hour] = value
                 
                 elif n == 'dhw_storage':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        '''
+                        Goal:
+                            Fornire acqua calda nei momenti in cui la richiesta è più alta.
+                        Logica:
+                            Vengono definite due fasce orarie di riferimento. Per la mattina
+                            viene fissata la fascia oraria che va dalle 6 alle 9, mentre per
+                            la sera la fascia oraria che va dalle 18 alle 22. In questi archi
+                            di tempo viene aumentata la produzione di calore.
+                            Al di fuori di queste fasce orarie si mantiene una temperatura di
+                            base per risparmiare energia.
+                        '''
+
+                        if 6 <= hour >= 9 or 18 <= hour >= 22:
+                            value = 0.8 # Stato di alta efficienza.
+                        else:
+                            value = 0.2 # Stato conservativo.
 
                         action_map[n][hour] = value
 
                 elif n == 'cooling_device':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        '''
+                        Goal:
+                            Ottimizzare il comfort termico riducendo il consumo energetico.
+                        Logica:
+                            La fascia oraria che va dalle 10 alle 16 rappresenta il periodo nel
+                            quale la temperatura esterna è più elevata, quindi in questo lasso
+                            di tempo il raffreddamento viene attivato in modi più intenso.
+                            Al di fuori di queste ore viene ridotto l'uso del sistema.
+                        '''
+
+                        if 10 <= hour >= 16:
+                            value = 0.7 # Stato di alto sforzo.
+                        else:
+                            value = 0.3 # Stato di sforzo minore.
 
                         action_map[n][hour] = value
                 
