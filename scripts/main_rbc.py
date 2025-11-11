@@ -41,10 +41,14 @@ class CustomRBC(BasicRBC):
                             Al di fuori di questa fascia oraria le batterie vengono caricate.
                         '''
 
-                        if 8 <= hour <= 18:
-                            value = 0.9 # Stato di massima efficienza.
+                        if 6 <= hour <= 7:
+                            value = -0.2
+                        elif 8 <= hour <= 18:
+                            value = -0.7
+                        elif 19 <= hour <= 21:
+                            value = -0.4
                         else:
-                            value = 0.1 # Stato di minimo sforzo.
+                            value = 0.8
 
                         action_map[n][hour] = value
                 
@@ -58,14 +62,18 @@ class CustomRBC(BasicRBC):
                             viene fissata la fascia oraria che va dalle 6 alle 9, mentre per
                             la sera la fascia oraria che va dalle 18 alle 22. In questi archi
                             di tempo viene aumentata la produzione di calore.
+                            Dalle 12 alle 15 invece, orario di pranzo, la produzione di calore
+                            è media.
                             Al di fuori di queste fasce orarie si mantiene una temperatura di
                             base per risparmiare energia.
                         '''
 
-                        if 6 <= hour >= 9 or 18 <= hour >= 22:
-                            value = 0.8 # Stato di alta efficienza.
+                        if 6 <= hour <= 9 or 18 <= hour <= 22:
+                            value = 0.7
+                        elif 12 <= hour <= 15:
+                            value = 0.4
                         else:
-                            value = 0.2 # Stato conservativo.
+                            value = 0.2
 
                         action_map[n][hour] = value
 
@@ -77,14 +85,17 @@ class CustomRBC(BasicRBC):
                         Logica:
                             La fascia oraria che va dalle 10 alle 16 rappresenta il periodo nel
                             quale la temperatura esterna è più elevata, quindi in questo lasso
-                            di tempo il raffreddamento viene attivato in modi più intenso.
+                            di tempo il raffreddamento viene attivato in modo più intenso.
+                            Dalle 8 alle 9 e dalle 17 alle 19 il raffreddamento sarà medio.
                             Al di fuori di queste ore viene ridotto l'uso del sistema.
                         '''
 
-                        if 10 <= hour >= 16:
-                            value = 0.7 # Stato di alto sforzo.
+                        if 10 <= hour <= 16:
+                            value = 0.7
+                        elif 6 <= hour <= 9 or 17 <= hour <= 19:
+                            value = 0.4
                         else:
-                            value = 0.3 # Stato di sforzo minore.
+                            value = 0.2
 
                         action_map[n][hour] = value
                 
