@@ -34,18 +34,18 @@ class CustomRBC(BasicRBC):
                         '''
                         Goal:
                             Ottimizzare l'utilizzo delle batterie con lo scopo di ridurre
-                            i costi e massimizzare l'efficenza. Nelle prime ore del mattino e
-                            della sera le batterie vengono scaricate con intensità bassa,
-                            mentre nelle ore di punta vengono scaricate con intensità alta.
-                            Nelle altre ore vengono ricaricate con intensità media.
+                            i costi e massimizzare l'efficenza. Nelle ore di punta vengono 
+                            scaricate con intensità alta. Dalle 10 di sera alle 5 di mattina
+                            vengono ricaricate con intensità media, mentre nelle altre ore
+                            non fanno nulla.
                         '''
 
-                        if 6 <= hour <= 7 or 19 <= hour <= 21: # Scarica a bassa intensità durante le prime ore del mattino e sera.
-                            value = -0.3
-                        elif 8 <= hour <= 18: # Scarica ad alta intensità nelle ore di punta.
+                        if 8 <= hour <= 18: # Scarica ad alta intensità nelle ore di punta.
                             value = -0.7
-                        else:
+                        elif 22 <= hour <= 5:
                             value = 0.5 # Ricarica ad intensità media.
+                        else:
+                            value = 0.0
 
                         action_map[n][hour] = value
                 
@@ -64,7 +64,7 @@ class CustomRBC(BasicRBC):
                         elif 12 <= hour <= 15: # Efficienza medio/bassa nell'ora di pranzo
                             value = 0.3
                         else:
-                            value = 0.1 #Stato conservativo.
+                            value = 0.0 #Stato conservativo.
 
                         action_map[n][hour] = value
 
@@ -83,7 +83,7 @@ class CustomRBC(BasicRBC):
                         elif 6 <= hour <= 9 or 17 <= hour <= 19: # Intensità intermedia nelle ore in cui potrebbe ancora esserci caldo moderato.
                             value = 0.4
                         else:
-                            value = 0.2 # Stato conservativo.
+                            value = 0.0 # Stato conservativo.
 
                         action_map[n][hour] = value
                 
