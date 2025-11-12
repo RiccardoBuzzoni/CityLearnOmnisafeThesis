@@ -34,21 +34,18 @@ class CustomRBC(BasicRBC):
                         '''
                         Goal:
                             Ottimizzare l'utilizzo delle batterie con lo scopo di ridurre
-                            i costi e massimizzare l'efficenza.
-                        Logica:
-                            Dalle 8 alle 18 (fascia oraria nella quale la domanda di energia
-                            è più alta) vengono scaricate le batterie.
-                            Al di fuori di questa fascia oraria le batterie vengono caricate.
+                            i costi e massimizzare l'efficenza. Nelle prime ore del mattino e
+                            della sera le batterie vengono scaricate con intensità bassa,
+                            mentre nelle ore di punta vengono scaricate con intensità alta.
+                            Nelle altre ore vengono ricaricate con intensità media.
                         '''
 
-                        if 6 <= hour <= 7:
-                            value = -0.2
-                        elif 8 <= hour <= 18:
+                        if 6 <= hour <= 7 or 19 <= hour <= 21: # Scarica a bassa intensità durante le prime ore del mattino e sera.
+                            value = -0.3
+                        elif 8 <= hour <= 18: # Scarica ad alta intensità nelle ore di punta.
                             value = -0.7
-                        elif 19 <= hour <= 21:
-                            value = -0.4
                         else:
-                            value = 0.8
+                            value = 0.5 # Ricarica ad intensità media.
 
                         action_map[n][hour] = value
                 
@@ -56,24 +53,18 @@ class CustomRBC(BasicRBC):
                     for hour in Building.get_periodic_observation_metadata()['hour']:
                         '''
                         Goal:
-                            Fornire acqua calda nei momenti in cui la richiesta è più alta.
-                        Logica:
-                            Vengono definite due fasce orarie di riferimento. Per la mattina
-                            viene fissata la fascia oraria che va dalle 6 alle 9, mentre per
-                            la sera la fascia oraria che va dalle 18 alle 22. In questi archi
-                            di tempo viene aumentata la produzione di calore.
-                            Dalle 12 alle 15 invece, orario di pranzo, la produzione di calore
-                            è media.
-                            Al di fuori di queste fasce orarie si mantiene una temperatura di
-                            base per risparmiare energia.
+                            Bilanciare comfort ed efficienza fornendo piu' calore nelle ore
+                            di punta. Nelle ore di pranzo (12-15) viene fornito calore con 
+                            efficienza intermedia. Nelle alte ore viene mantenuto lo stato
+                            conservativo.
                         '''
 
-                        if 6 <= hour <= 9 or 18 <= hour <= 22:
-                            value = 0.7
-                        elif 12 <= hour <= 15:
-                            value = 0.4
+                        if 6 <= hour <= 9 or 18 <= hour <= 22: # Efficienza moderata nelle ore di picco.
+                            value = 0.5
+                        elif 12 <= hour <= 15: # Efficienza medio/bassa nell'ora di pranzo
+                            value = 0.3
                         else:
-                            value = 0.2
+                            value = 0.1 #Stato conservativo.
 
                         action_map[n][hour] = value
 
@@ -81,21 +72,18 @@ class CustomRBC(BasicRBC):
                     for hour in Building.get_periodic_observation_metadata()['hour']:
                         '''
                         Goal:
-                            Ottimizzare il comfort termico riducendo il consumo energetico.
-                        Logica:
-                            La fascia oraria che va dalle 10 alle 16 rappresenta il periodo nel
-                            quale la temperatura esterna è più elevata, quindi in questo lasso
-                            di tempo il raffreddamento viene attivato in modo più intenso.
-                            Dalle 8 alle 9 e dalle 17 alle 19 il raffreddamento sarà medio.
-                            Al di fuori di queste ore viene ridotto l'uso del sistema.
+                            Ottimizzare il comfort termico riducendo il consumo energetico. Nelle
+                            ore più calde l'unità di raffreddamento lavora con intensità elevata,
+                            nelle prime ore del mattnio e sera lavora invece con intensità
+                            intermedia. Nelle altre ore mantiene lo stato conservativo.
                         '''
 
-                        if 10 <= hour <= 16:
+                        if 10 <= hour <= 16: # Intensità elevata nelle ore più calde.
                             value = 0.7
-                        elif 6 <= hour <= 9 or 17 <= hour <= 19:
+                        elif 6 <= hour <= 9 or 17 <= hour <= 19: # Intensità intermedia nelle ore in cui potrebbe ancora esserci caldo moderato.
                             value = 0.4
                         else:
-                            value = 0.2
+                            value = 0.2 # Stato conservativo.
 
                         action_map[n][hour] = value
                 
