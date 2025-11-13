@@ -34,16 +34,13 @@ class CustomRBC(BasicRBC):
                         '''
                         Goal:
                             Ottimizzare l'utilizzo delle batterie con lo scopo di ridurre
-                            i costi e massimizzare l'efficenza. Nelle ore di punta vengono 
-                            scaricate con intensità alta. Dalle 10 di sera alle 5 di mattina
-                            vengono ricaricate con intensità media, mentre nelle altre ore
-                            non fanno nulla.
+                            i costi e massimizzare l'efficenza.
                         '''
 
                         if 8 <= hour <= 18: # Scarica ad alta intensità nelle ore di punta.
-                            value = -0.7
+                            value = -0.6
                         elif 22 <= hour <= 5:
-                            value = 0.5 # Ricarica ad intensità media.
+                            value = 0.4 # Ricarica ad intensità media.
                         else:
                             value = 0.0
 
@@ -54,9 +51,7 @@ class CustomRBC(BasicRBC):
                         '''
                         Goal:
                             Bilanciare comfort ed efficienza fornendo piu' calore nelle ore
-                            di punta. Nelle ore di pranzo (12-15) viene fornito calore con 
-                            efficienza intermedia. Nelle alte ore viene mantenuto lo stato
-                            conservativo.
+                            di punta.
                         '''
 
                         if 6 <= hour <= 9 or 18 <= hour <= 22: # Efficienza moderata nelle ore di picco.
@@ -72,10 +67,7 @@ class CustomRBC(BasicRBC):
                     for hour in Building.get_periodic_observation_metadata()['hour']:
                         '''
                         Goal:
-                            Ottimizzare il comfort termico riducendo il consumo energetico. Nelle
-                            ore più calde l'unità di raffreddamento lavora con intensità elevata,
-                            nelle prime ore del mattnio e sera lavora invece con intensità
-                            intermedia. Nelle altre ore mantiene lo stato conservativo.
+                            Ottimizzare il comfort termico riducendo il consumo energetico.
                         '''
 
                         if 10 <= hour <= 16: # Intensità elevata nelle ore più calde.
