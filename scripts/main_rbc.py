@@ -74,8 +74,6 @@ class CustomRBC(BasicRBC):
 
                         if 10 <= hour <= 16: # Intensità elevata nelle ore più calde.
                             value = 0.7
-                        elif 7 <= hour <= 9 or 17 <= hour <= 19: # Intensità bassa nelle ore in cui potrebbe ancora esserci caldo moderato.
-                            value = 0.2
                         else:
                             value = 0.0 # Stato conservativo.
 
