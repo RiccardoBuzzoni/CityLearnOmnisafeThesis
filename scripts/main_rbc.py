@@ -37,14 +37,16 @@ class CustomRBC(BasicRBC):
                             i costi e massimizzare l'efficenza.
                         '''
 
-                        if 8 <= hour <= 18: # Scarica a medio/alta intensità nelle ore di punta.
-                            value = -0.6
-                        elif 19 <= hour <= 0:
-                            value = 0.8 # Ricarica ad alta intensità.
-                        elif 1 <= hour <= 5:
-                            value = -0.2 # Scarica a bassa media.
+                        if 22 <= hour <= 5:
+                            value = 0.6
+                        elif 6 <= hour <= 8:
+                            value = -0.2
+                        elif 8 <= hour <= 12 or 15 <= hour <= 18:
+                            value = -0.4
+                        elif 13 <= hour <= 14:
+                            value = -0.1
                         else:
-                            value = 0.0
+                            value = -0.01
 
                         action_map[n][hour] = value
                 
@@ -56,12 +58,14 @@ class CustomRBC(BasicRBC):
                             di punta.
                         '''
 
-                        if 6 <= hour <= 9 or 19 <= hour <= 22: # Efficienza medio/alta nelle ore di picco.
-                            value = 0.7
-                        elif 12 <= hour <= 14: # Efficienza medio/bassa nell'ora di pranzo
+                        if 6 <= hour <= 9 or 19 <= hour <= 21:
                             value = 0.3
+                        elif 22 <= hour <= 5:
+                            value = 0.01
+                        elif 12 <= hour <= 14:
+                            value = 0.15
                         else:
-                            value = 0.0 #Stato conservativo.
+                            value = 0.05
 
                         action_map[n][hour] = value
 
@@ -72,10 +76,14 @@ class CustomRBC(BasicRBC):
                             Ottimizzare il comfort termico riducendo il consumo energetico.
                         '''
 
-                        if 10 <= hour <= 16: # Intensità elevata nelle ore più calde.
-                            value = 0.7
+                        if 10 <= hour <= 16:
+                            value = 0.3
+                        elif 5 <= hour <= 9 or 17 <= hour <= 19:
+                            value = 0.15
+                        elif 20 <= hour <= 23:
+                            value = 0.05
                         else:
-                            value = 0.0 # Stato conservativo.
+                            value = 0.01
 
                         action_map[n][hour] = value
                 
