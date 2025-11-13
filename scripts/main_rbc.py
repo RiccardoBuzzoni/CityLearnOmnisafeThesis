@@ -37,10 +37,12 @@ class CustomRBC(BasicRBC):
                             i costi e massimizzare l'efficenza.
                         '''
 
-                        if 8 <= hour <= 18: # Scarica ad alta intensità nelle ore di punta.
+                        if 8 <= hour <= 18: # Scarica a medio/alta intensità nelle ore di punta.
                             value = -0.6
-                        elif 22 <= hour <= 5:
-                            value = 0.4 # Ricarica ad intensità media.
+                        elif 19 <= hour <= 0:
+                            value = 0.8 # Ricarica ad alta intensità.
+                        elif 1 <= hour <= 5:
+                            value = -0.2 # Scarica a bassa media.
                         else:
                             value = 0.0
 
@@ -54,9 +56,9 @@ class CustomRBC(BasicRBC):
                             di punta.
                         '''
 
-                        if 6 <= hour <= 9 or 18 <= hour <= 22: # Efficienza moderata nelle ore di picco.
-                            value = 0.5
-                        elif 12 <= hour <= 15: # Efficienza medio/bassa nell'ora di pranzo
+                        if 6 <= hour <= 9 or 19 <= hour <= 22: # Efficienza medio/alta nelle ore di picco.
+                            value = 0.7
+                        elif 12 <= hour <= 14: # Efficienza medio/bassa nell'ora di pranzo
                             value = 0.3
                         else:
                             value = 0.0 #Stato conservativo.
@@ -72,8 +74,8 @@ class CustomRBC(BasicRBC):
 
                         if 10 <= hour <= 16: # Intensità elevata nelle ore più calde.
                             value = 0.7
-                        elif 6 <= hour <= 9 or 17 <= hour <= 19: # Intensità intermedia nelle ore in cui potrebbe ancora esserci caldo moderato.
-                            value = 0.4
+                        elif 7 <= hour <= 9 or 17 <= hour <= 19: # Intensità bassa nelle ore in cui potrebbe ancora esserci caldo moderato.
+                            value = 0.2
                         else:
                             value = 0.0 # Stato conservativo.
 
