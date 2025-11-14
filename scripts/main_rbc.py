@@ -86,17 +86,6 @@ class AdvancedRBC(Agent):
             # TODO add other observations if needed
             # TODO implement more advanced RBC logic for each device
 
-            # Months and seasons
-            month = o[available_obs.index('month')]
-            if month == 3 or month == 4 or month == 5:
-                season = 'spring'
-            if month == 6 or month == 7 or month == 8:
-                season = 'summer'
-            if month == 9 or month == 10 or month == 11:
-                season = 'autumn'
-            else:
-                season = 'winter'
-
             # Indoor temperature and setpoints
             indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
             cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
@@ -144,6 +133,10 @@ def main(args):
     # Create CityLearn environment
     env_1 = CityLearnEnv(schema=schema, central_agent=True)
     env_2 = CityLearnEnv(schema=schema, central_agent=True)
+
+    # Debug: Print available observations for the first building
+    print("Available observations:", env_1.observation_names[0])
+
     agent = AdvancedRBC(env_1)
     baseline_agent = OptimizedRBC(env_2)
 
