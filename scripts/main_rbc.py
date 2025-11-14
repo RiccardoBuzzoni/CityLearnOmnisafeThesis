@@ -113,7 +113,18 @@ class AdvancedRBC(Agent):
             indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
             cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
 
+            # Months and seasons
+            month = o[available_obs.index('month')]
+            if month == 3 or month == 4 or month == 5:
+                season = 'spring'
+            elif month == 6 or month == 7 or month == 8:
+                season = 'summer'
+            elif month == 9 or month == 10 or month == 11:
+                season = 'autumn'
+            else:
+                season = 'winter'
 
+            # Actions
             if 'cooling_device' in available_act:
                 # EXAMPLE LOGIC: Turn on cooling if indoor temp exceeds setpoint + comfort band
                 if indoor_temp > cooling_setpoint + self.comfort_band:
