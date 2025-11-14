@@ -31,42 +31,19 @@ class CustomRBC(BasicRBC):
 
                 if 'electrical_storage' in n:
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        if 22 <= hour <= 5:
-                            value = 0.6
-                        elif 6 <= hour <= 8:
-                            value = -0.2
-                        elif 8 <= hour <= 12 or 15 <= hour <= 18:
-                            value = -0.4
-                        elif 13 <= hour <= 14:
-                            value = -0.1
-                        else:
-                            value = -0.01
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
                 
                 elif n == 'dhw_storage':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        if 6 <= hour <= 9 or 19 <= hour <= 21:
-                            value = 0.3
-                        elif 22 <= hour <= 5:
-                            value = 0.01
-                        elif 12 <= hour <= 14:
-                            value = 0.15
-                        else:
-                            value = 0.05
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
 
                 elif n == 'cooling_device':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        if 10 <= hour <= 16:
-                            value = 0.3
-                        elif 5 <= hour <= 9 or 17 <= hour <= 19:
-                            value = 0.15
-                        elif 20 <= hour <= 23:
-                            value = 0.05
-                        else:
-                            value = 0.01
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
                 
@@ -109,22 +86,22 @@ class AdvancedRBC(Agent):
             # TODO add other observations if needed
             # TODO implement more advanced RBC logic for each device
 
-            # Indoor temperature and setpoints
-            indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
-            cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
-
             # Months and seasons
             month = o[available_obs.index('month')]
             if month == 3 or month == 4 or month == 5:
                 season = 'spring'
-            elif month == 6 or month == 7 or month == 8:
+            if month == 6 or month == 7 or month == 8:
                 season = 'summer'
-            elif month == 9 or month == 10 or month == 11:
+            if month == 9 or month == 10 or month == 11:
                 season = 'autumn'
             else:
                 season = 'winter'
 
-            # Actions
+            # Indoor temperature and setpoints
+            indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
+            cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
+
+
             if 'cooling_device' in available_act:
                 # EXAMPLE LOGIC: Turn on cooling if indoor temp exceeds setpoint + comfort band
                 if indoor_temp > cooling_setpoint + self.comfort_band:
