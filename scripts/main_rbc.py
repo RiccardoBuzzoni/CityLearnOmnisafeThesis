@@ -1,17 +1,17 @@
 import sys, os
 
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from CityLearn.citylearn.agents.base import Agent
 from CityLearn.citylearn.agents.rbc import BasicRBC, HourRBC, OptimizedRBC
 from CityLearn.citylearn.citylearn import CityLearnEnv, Building
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Core
 from typing import Mapping, Union
 
 import warnings; warnings.filterwarnings("ignore", category=UserWarning)
 from utils import *
-
 
 class CustomRBC(BasicRBC):
 
@@ -31,59 +31,19 @@ class CustomRBC(BasicRBC):
 
                 if 'electrical_storage' in n:
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        '''
-                        Goal:
-                            Ottimizzare l'utilizzo delle batterie con lo scopo di ridurre
-                            i costi e massimizzare l'efficenza.
-                        '''
-
-                        if 22 <= hour <= 5:
-                            value = 0.6
-                        elif 6 <= hour <= 8:
-                            value = -0.2
-                        elif 8 <= hour <= 12 or 15 <= hour <= 18:
-                            value = -0.4
-                        elif 13 <= hour <= 14:
-                            value = -0.1
-                        else:
-                            value = -0.01
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
                 
                 elif n == 'dhw_storage':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        '''
-                        Goal:
-                            Bilanciare comfort ed efficienza fornendo piu' calore nelle ore
-                            di punta.
-                        '''
-
-                        if 6 <= hour <= 9 or 19 <= hour <= 21:
-                            value = 0.3
-                        elif 22 <= hour <= 5:
-                            value = 0.01
-                        elif 12 <= hour <= 14:
-                            value = 0.15
-                        else:
-                            value = 0.05
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
 
                 elif n == 'cooling_device':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        '''
-                        Goal:
-                            Ottimizzare il comfort termico riducendo il consumo energetico.
-                        '''
-
-                        if 10 <= hour <= 16:
-                            value = 0.3
-                        elif 5 <= hour <= 9 or 17 <= hour <= 19:
-                            value = 0.15
-                        elif 20 <= hour <= 23:
-                            value = 0.05
-                        else:
-                            value = 0.01
+                        # TODO: Implement RBC policy
 
                         action_map[n][hour] = value
                 
@@ -92,6 +52,64 @@ class CustomRBC(BasicRBC):
                 
         # Imposta la mappa nella superclasse
         HourRBC.action_map.fset(self, action_map)
+
+class AdvancedRBC(Agent):
+    """
+    Advanced Rule-Based Controller (RBC) Agent with comfort band consideration.
+
+    Parameters
+    ----------
+    env: CityLearnEnv
+        CityLearn environment to perform control on.
+    band: float
+        Comfort band to try to satisfy. 
+
+    """
+    def __init__(self, env: CityLearnEnv, band: float=2.0, **kwargs):
+
+        # Init OptimizedRBC
+        super().__init__(env, **kwargs)
+
+        # Comfort band (+/-) to satisfy
+        self.comfort_band = band 
+
+    def predict(self, observations: List[List[float]], deterministic: bool = True) -> List[List[float]]:        
+
+        actions = []
+        for i, o in enumerate(observations):
+
+            # Available spaces
+            available_obs = self.observation_names[i]
+            available_act = self.action_names[i]
+            action = [0.0 for _ in range(len(available_act))]
+
+            # TODO add other observations if needed
+            # TODO implement more advanced RBC logic for each device
+
+            # Indoor temperature and setpoints
+            indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
+            cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
+
+
+            if 'cooling_device' in available_act:
+                # EXAMPLE LOGIC: Turn on cooling if indoor temp exceeds setpoint + comfort band
+                if indoor_temp > cooling_setpoint + self.comfort_band:
+                    action[available_act.index('cooling_device')] = 1.0  # Turn on cooling
+                else:
+                    action[available_act.index('cooling_device')] = 0.0  # Turn off cooling
+
+            if 'electrical_storage' in available_act:
+                pass
+
+            if 'dhw_storage' in available_act:
+                pass
+
+            actions.append(action)
+
+        # Return overwritten actions
+        self.actions = actions
+        return actions
+
 
 def run_simulation(agent, env):
     print("Starting simulation...")
@@ -102,7 +120,7 @@ def run_simulation(agent, env):
         actions = agent.predict(observations)
         observations, reward, terminated, truncated, info = env.step(actions)
 
-    print("Simulation completed.")
+    print("Simulation completed.\n")
 
 def main(args):
 
@@ -115,7 +133,7 @@ def main(args):
     # Create CityLearn environment
     env_1 = CityLearnEnv(schema=schema, central_agent=True)
     env_2 = CityLearnEnv(schema=schema, central_agent=True)
-    agent = CustomRBC(env_1)
+    agent = AdvancedRBC(env_1)
     baseline_agent = OptimizedRBC(env_2)
 
     run_simulation(agent, env_1)
@@ -123,7 +141,7 @@ def main(args):
 
     # Compare results
     plot_district_kpis(
-        {'CustomRBC': env_1, 'OptimizedRBC': env_2},
+        {'AdvancedRBC': env_1, 'OptimizedRBC': env_2},
         base_path='imgs'
     )
 
