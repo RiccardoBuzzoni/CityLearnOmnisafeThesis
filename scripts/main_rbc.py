@@ -31,19 +31,42 @@ class CustomRBC(BasicRBC):
 
                 if 'electrical_storage' in n:
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        if 22 <= hour <= 5:
+                            value = 0.6
+                        elif 6 <= hour <= 8:
+                            value = -0.2
+                        elif 8 <= hour <= 12 or 15 <= hour <= 18:
+                            value = -0.4
+                        elif 13 <= hour <= 14:
+                            value = -0.1
+                        else:
+                            value = -0.01
 
                         action_map[n][hour] = value
                 
                 elif n == 'dhw_storage':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        if 6 <= hour <= 9 or 19 <= hour <= 21:
+                            value = 0.3
+                        elif 22 <= hour <= 5:
+                            value = 0.01
+                        elif 12 <= hour <= 14:
+                            value = 0.15
+                        else:
+                            value = 0.05
 
                         action_map[n][hour] = value
 
                 elif n == 'cooling_device':
                     for hour in Building.get_periodic_observation_metadata()['hour']:
-                        # TODO: Implement RBC policy
+                        if 10 <= hour <= 16:
+                            value = 0.3
+                        elif 5 <= hour <= 9 or 17 <= hour <= 19:
+                            value = 0.15
+                        elif 20 <= hour <= 23:
+                            value = 0.05
+                        else:
+                            value = 0.01
 
                         action_map[n][hour] = value
                 
