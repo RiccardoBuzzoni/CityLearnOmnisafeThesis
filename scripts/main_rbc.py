@@ -118,86 +118,6 @@ class AdvancedRBC(Agent):
             if 'cooling_device' in available_act:
                 # Peak hours
                 if 12 <= hour <= 16:
-                    '''
-                    # Indoor temperature above setpoint
-                    if indoor_temp > cooling_setpoint:
-                        if occupants_present == 0:
-                            action[available_act.index('cooling_device')] = 0.0
-                        else:
-                            # Carbon emission evaluation
-                            if carbon_intensity < 0.40:
-                                # Low electricity price
-                                if electricity_pricing <= 0.03:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.3
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.5
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.7
-                                # High electricity price
-                                elif electricity_pricing > 0.03:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.1
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.3
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.5
-                                # Low electricity price + high solar generation
-                                if electricity_pricing <= 0.03 and solar_generation > 0.2:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.4
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.6
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.8
-                                # High electricity price + high solar generation
-                                if electricity_pricing > 0.03 and solar_generation > 0.2:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.2
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.4
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.6
-                                # Default action
-                                action[available_act.index('cooling_device')] = 0.55
-                            # High carbon emission
-                            else:
-                                # Low electricity price
-                                if electricity_pricing <= 0.03:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.2
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.4
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.6
-                                # High electricity price
-                                elif electricity_pricing > 0.03:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.05
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.2
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.4
-                                # Low electricity price + high solar generation
-                                if electricity_pricing <= 0.03 and solar_generation > 0.2:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.3
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.5
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.7
-                                # High electricity price + high solar generation
-                                if electricity_pricing > 0.03 and solar_generation > 0.2:
-                                    if outdoor_temp < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.1
-                                    elif predicted_outdoor_temperature < cooling_setpoint:
-                                        action[available_act.index('cooling_device')] = 0.3
-                                    else:
-                                        action[available_act.index('cooling_device')] = 0.5
-                                # Default action
-                                action[available_act.index('cooling_device')] = 0.44
-                    '''
-                    
                     # Indoor temperature avove setpoint + comfort band
                     if indoor_temp > cooling_setpoint + self.comfort_band:
                         if occupants_present == 0:
@@ -515,7 +435,7 @@ class AdvancedRBC(Agent):
                         else:
                             action[available_act.index('dhw_storage')] = 0.33
 
-            # Debug info
+            # Actions value per hour
             debug_action_dict = {}
             if 'cooling_device' in available_act:
                 debug_action_dict['cooling_device'] = action[available_act.index('cooling_device')]
@@ -538,9 +458,49 @@ def run_simulation(agent, env):
     print(f"Agent: {agent.__class__.__name__}")
     observations, _ = env.reset()
     max_steps = env.time_steps - 1
+
+    # KPI logging: weekly and daily. Each time step is 1 hour.
+    weekly_interval_steps = 7 * 24  # 168 steps
+    daily_interval_steps = 1 * 24   # 24 steps
+    kpi_dir = 'kpi_logs'
+    weekly_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_weekly_kpis_log.txt')
+    daily_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_daily_kpis_log.txt')
+    os.makedirs(kpi_dir, exist_ok=True)
+
+    def _append_kpis(step_index: int, filepath: str):
+        try:
+            kpis = get_kpis(env)
+            # Filter district-level KPIs
+            kpis = kpis[kpis['level'] == 'district']
+
+            day = step_index // 24
+            with open(filepath, 'a') as fh:
+                fh.write(f'--- STEP: {step_index} (day {day}) ---\n')
+                for _, row in kpis.iterrows():
+                    fh.write(f"{row['kpi']}: {row['value']}\n")
+                fh.write('\n')
+        except Exception as e:
+            # Debugging log
+            with open(filepath, 'a') as fh:
+                fh.write(f'Failed to write KPIs at step {step_index}: {e}\n\n')
+
+    # Initial KPI snapshots at start (step 0)
+    _append_kpis(0, daily_kpi_file)
+    _append_kpis(0, weekly_kpi_file)
+
+    step_index = 0
     for _ in range(max_steps):
         actions = agent.predict(observations)
         observations, reward, terminated, truncated, info = env.step(actions)
+        step_index += 1
+
+        # Write daily KPIs every daily_interval_steps
+        if step_index % daily_interval_steps == 0:
+            _append_kpis(step_index, daily_kpi_file)
+
+        # Write weekly KPIs every weekly_interval_steps
+        if step_index % weekly_interval_steps == 0:
+            _append_kpis(step_index, weekly_kpi_file)
 
     print("Simulation completed.\n")
 

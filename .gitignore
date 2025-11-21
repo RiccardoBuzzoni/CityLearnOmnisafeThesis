@@ -13,6 +13,9 @@
 # Images
 **/imgs/*
 
+# KPI logs
+**/kpi_logs/*
+
 # VSCode settings
 **/.vscode/*
 
