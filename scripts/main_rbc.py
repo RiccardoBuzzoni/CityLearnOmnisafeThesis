@@ -86,23 +86,169 @@ class AdvancedRBC(Agent):
             # TODO add other observations if needed
             # TODO implement more advanced RBC logic for each device
 
-            # Indoor temperature and setpoints
             indoor_temp = o[available_obs.index('indoor_dry_bulb_temperature')]
+            outdoor_temp = o[available_obs.index('outdoor_dry_bulb_temperature')]
+            predicted_outdoor_temp_6h = o[available_obs.index('outdoor_dry_bulb_temperature_predicted_1')]
             cooling_setpoint = o[available_obs.index('indoor_dry_bulb_temperature_cooling_set_point')]
-
+            solar_gen = o[available_obs.index('solar_generation')]
+            dhw_demand = o[available_obs.index('dhw_demand')]
+            occupant_present = o[available_obs.index('occupant_count')]
+            carbon_int = o[available_obs.index('carbon_intensity')]
+            elec_price = o[available_obs.index('electricity_pricing')]
+            elec_price_pred = o[available_obs.index('electricity_pricing_predicted_1')]
+            hour = o[available_obs.index('hour')]
+            electrical_storage_soc = o[available_obs.index('electrical_storage_soc')] #O to 1
+            dhw_storage_soc = o[available_obs.index('dhw_storage_soc')] # 0 to 1
+            
 
             if 'cooling_device' in available_act:
-                # EXAMPLE LOGIC: Turn on cooling if indoor temp exceeds setpoint + comfort band
-                if indoor_temp > cooling_setpoint + self.comfort_band:
-                    action[available_act.index('cooling_device')] = 1.0  # Turn on cooling
-                else:
-                    action[available_act.index('cooling_device')] = 0.0  # Turn off cooling
+                if 'cooling_device' in available_act:
+
+                    idx = available_act.index('cooling_device')
+
+                    # 0) Se non ci sono persone --> niente raffreddamento per risparmiare energia
+                    if occupant_present == 0:
+                        action[idx] = 0.0
+
+                    else:
+                        # 1) Logica temperatura interna
+                        too_hot = indoor_temp > cooling_setpoint + self.comfort_band
+                        slightly_hot = indoor_temp > cooling_setpoint
+
+                        # 2) Condizioni "ambientali" sfavorevoli (prezzo e carbon intensity)
+                        high_price = elec_price > 0.25      # prezzo alto
+                        high_carbon = carbon_int > 0.45     # CO2 alta
+                        very_hot_outdoor = outdoor_temp > 30
+
+                        # 3) Fascia "calda" della giornata
+                        peak_cooling_hours = 12 <= hour <= 17
+
+                        # ---- DECISIONE RBC ----
+
+                        if too_hot:
+                            # Fa caldo e ci sono persone
+                            if high_price or high_carbon:
+                                # Evita consumi alti in condizioni sfavorevoli
+                                action[idx] = 0.4
+                            else:
+                                # Raffredda forte solo quando conviene
+                                action[idx] = 0.9
+
+                        elif slightly_hot:
+                            # Temp leggermente sopra il setpoint
+                            if peak_cooling_hours or very_hot_outdoor:
+                                action[idx] = 0.5
+                            else:
+                                action[idx] = 0.3
+
+                        else:
+                            # Temp confortevole
+                            if peak_cooling_hours and solar_gen > 0.3:
+                                # Usiamo surplus solare per precool
+                                action[idx] = 0.25
+                            else:
+                                action[idx] = 0.0
+
 
             if 'electrical_storage' in available_act:
-                pass
+                if electrical_storage_soc == 1.0:
+                    
+                    #peak hours
+                    if 17 <= hour <= 22:        
+                        if elec_price > 0.03 or solar_gen > 0.3:
+                            action[available_act.index('electrical_storage')] = -0.7 #discharge during peak hours with high electricity price
+                        elif elec_price <= 0.03 or solar_gen <= 0.3:
+                            action[available_act.index('electrical_storage')] = -0.35 #discharge during peak hours with low electricity price
+                    #non peak
+                    elif 8 <= hour <= 16:
+                        if elec_price > 0.03 or solar_gen > 0.3:
+                            action[available_act.index('electrical_storage')] = 0.35 #low charge during non-peak hours with high electricity price
+                        elif elec_price <= 0.03 or solar_gen >= 0.3:
+                            action[available_act.index('electrical_storage')] = 0.75 #high charge during non-peak hours with low electricity price
+                        elif elec_price <= 0.03 or solar_gen < 0.3:
+                            action[available_act.index('electrical_storage')] = 0.55 #charge during non-peak hours with low electricity price and high solar generation
+                    
+                    #non peak hours - night
+                    if 0 <= hour <= 7 or hour == 23:
+                        if elec_price <= 0.03:
+                            action[available_act.index('electrical_storage')] = 0.75 #charge during night with low electricity price
+                        elif elec_price_pred > 0.03:
+                            action[available_act.index('electrical_storage')] = 0.35 #discharge during night with high electricity price
+                
+                elif 0.5 <= electrical_storage_soc < 1.0:
+                    #peak hours
+                    if 17 <= hour <= 22:        
+                        if elec_price > 0.03 or solar_gen > 0.3:
+                            action[available_act.index('electrical_storage')] = -0.5 #discharge during peak hours with high electricity price
+                        elif elec_price <= 0.03 or solar_gen <= 0.3:
+                            action[available_act.index('electrical_storage')] = -0.25 #discharge during peak hours with low electricity price
+                    
+                    #non peak
+                    elif 8 <= hour <= 16:
+                        if elec_price > 0.03 or solar_gen > 0.3:
+                            action[available_act.index('electrical_storage')] = 0.45 #low charge during non-peak hours with high electricity price
+                        elif elec_price <= 0.03 or solar_gen >= 0.3:
+                            action[available_act.index('electrical_storage')] = 0.8 #high charge during non-peak hours with low electricity price
+                        elif elec_price <= 0.03 or solar_gen < 0.3:
+                            action[available_act.index('electrical_storage')] = 0.35 #charge during non-peak hours with low electricity price and high solar generation
+                    
+                    #non peak hours - night
+                    if 0 <= hour <= 7 or hour == 23:
+                        if elec_price <= 0.03:
+                            action[available_act.index('electrical_storage')] = 0.9 #charge during night with low electricity price
+                        elif elec_price_pred > 0.03:
+                            action[available_act.index('electrical_storage')] = 0.45 #discharge during night with high electricity price
 
+                else: # electrical_storage_soc < 0.5
+                    action[available_act.index('electrical_storage')] = 0.75 #charge
+            
+            
+            
             if 'dhw_storage' in available_act:
-                pass
+                if dhw_storage_soc == 1.0:
+                    #peak hours
+                    if 6 <= hour <= 9 or 18 <= hour <= 22:
+                        if dhw_demand > 0.6 and elec_price < 0.03: #high demand but low price - high discharge
+                            action[available_act.index('dhw_storage')] = -0.6
+                        elif dhw_demand > 0.3 and elec_price > 0.03: #high demand but high price - moderate discharge
+                            action[available_act.index('dhw_storage')] = -0.3
+                        else: 
+                            action[available_act.index('dhw_storage')] = -0.2
+                    #non peak hours
+                    elif 10 <= hour <= 17 or solar_gen > 0.4:
+                        action[available_act.index('dhw_storage')] = 0.7  
+                    elif 10 <= hour <= 17 or solar_gen <= 0.4:
+                        action[available_act.index('dhw_storage')] = 0.4  
+                    #non peak hours - night
+                    elif 0 <= hour < 6 or hour == 23:
+                        if elec_price_pred <= 0.03:
+                            action[available_act.index('dhw_storage')] = 0.7 #charge during night with low electricity price
+                        elif elec_price_pred > 0.03:
+                            action[available_act.index('dhw_storage')] = 0.3 #charge during night with high electricity price
+                
+                elif 0.5 <= dhw_storage_soc < 1.0:
+                    #peak hours
+                    if 6 <= hour <= 9 or 18 <= hour <= 22:
+                        if dhw_demand > 0.6 and elec_price < 0.03: #high demand but low price - high discharge
+                            action[available_act.index('dhw_storage')] = -0.5
+                        elif dhw_demand > 0.3 and elec_price > 0.03: #high demand but high price - moderate discharge
+                            action[available_act.index('dhw_storage')] = -0.25
+                        else: 
+                            action[available_act.index('dhw_storage')] = -0.15
+                    #non peak hours
+                    elif 10 <= hour <= 17 or solar_gen > 0.4:
+                        action[available_act.index('dhw_storage')] = 0.8  
+                    elif 10 <= hour <= 17 or solar_gen <= 0.4:
+                        action[available_act.index('dhw_storage')] = 0.5  
+                    #non peak hours - night
+                    elif 0 <= hour < 6 or hour == 23:
+                        if elec_price_pred <= 0.03:
+                            action[available_act.index('dhw_storage')] = 0.9 #charge during night with low electricity price
+                        elif elec_price_pred > 0.03:
+                            action[available_act.index('dhw_storage')] = 0.45 #charge during night with high electricity price
+                else: # dhw_storage_soc < 0.5
+                    action[available_act.index('dhw_storage')] = 0.75 #charge
+
 
             actions.append(action)
 
@@ -145,6 +291,7 @@ def main(args):
 
     # Compare results
     plot_district_kpis(
+        
         {'AdvancedRBC': env_1, 'OptimizedRBC': env_2},
         base_path='imgs'
     )
