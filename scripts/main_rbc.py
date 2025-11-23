@@ -107,7 +107,7 @@ class AdvancedRBC(Agent):
             hour = o[available_obs.index('hour')]
 
             # Electrical storage state of charge
-            electrical_soc = o[available_obs.index('electrical_storage_soc')]
+            electrical_storage_soc = o[available_obs.index('electrical_storage_soc')]
 
             # DHW storage state of charge
             dhw_storage_soc = o[available_obs.index('dhw_storage_soc')]
@@ -358,82 +358,188 @@ class AdvancedRBC(Agent):
                         action[available_act.index('cooling_device')] = 0.0
 
             if 'electrical_storage' in available_act:
-                if electrical_soc == 1.0:
-                    action[available_act.index('electrical_storage')] = -0.7  # Discharge
-                elif electrical_soc == 0.0:
-                    action[available_act.index('electrical_storage')] = 0.7   # Charge
-                
-                else:
-                    # Peak hours
-                    if 8 <= hour <= 18:
-                        # High electricity price -> high discharge
-                        if electricity_pricing > 0.03:
-                            action[available_act.index('electrical_storage')] = -0.6
-                        # Low electricity price -> medium discharge
+                if electrical_storage_soc == 1.0:
+                    # Peak hours -> discharge
+                    if 8 <= hour <= 10 or 18 <= hour <= 21:
+                        # High solar generation
+                        if solar_generation > 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.66
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.85
+                        elif 0.3 <= solar_generation <= 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.45
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.6
                         else:
-                            action[available_act.index('electrical_storage')] = -0.4
-                    
-                    # High solar generation during peak hours -> charge
-                    elif 10 <= hour <= 15 and solar_generation > 0.2:
-                        action[available_act.index('electrical_storage')] = 0.5
-                    
-                    # Off-peak hours -> charge  
-                    elif 0 <= hour <= 5:
-                        # Low electricity price -> high charge
-                        if electricity_pricing <= 0.03:
-                            action[available_act.index('electrical_storage')] = 0.5
-                        # High electricity price -> medium charge
-                        elif electricity_pricing > 0.03:
-                            action[available_act.index('electrical_storage')] = 0.3
-                        # Low electricity price + high solar generation
-                        elif electricity_pricing <= 0.03 and solar_generation > 0.2:
-                            action[available_act.index('electrical_storage')] = 0.7
-
-                    # Default action
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.3
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.4
+                    # Off-peak hours -> battery at max capacity so no action
                     else:
-                        if electrical_soc >= 0.5:
-                            action[available_act.index('electrical_storage')] = -0.3
-                        else:
-                            action[available_act.index('electrical_storage')] = 0.3
+                        action[available_act.index('electrical_storage')] = 0.0
 
+                elif 0.5 <= electrical_storage_soc < 1.0:
+                    # Peak hours -> discharge
+                    if 8 <= hour <= 10 or 18 <= hour <= 21:
+                        # High solar generation
+                        if solar_generation > 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.5
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.6
+                        elif 0.3 <= solar_generation <= 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.35
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.45
+                        else:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = -0.15
+                            else:
+                                action[available_act.index('electrical_storage')] = -0.3
+                    # Off-peak hours
+                    else:
+                        # High solar generation
+                        if solar_generation > 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.5
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.35
+                        elif 0.3 <= solar_generation <= 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.4
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.25
+                        else:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.3
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.15
+                
+                elif 0.2 <= electrical_storage_soc < 0.5:
+                    # Peak hours -> low battery capacity so minimal discharge
+                    if 8 <= hour <= 10 or 18 <= hour <= 21:
+                        action[available_act.index('electrical_storage')] = -0.1
+                    # Off-peak hours -> charge
+                    else:
+                        # High solar generation
+                        if solar_generation > 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.7
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.55
+                        elif 0.3 <= solar_generation <= 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.65
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.4
+                        else:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.5
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.3
+                
+                # Very low state of charge -> charge
+                else:
+                    # Peak hours -> no action
+                    if 8 <= hour <= 10 or 18 <= hour <= 21:
+                        action[available_act.index('electrical_storage')] = 0.0
+                    # Off-peak hours -> charge
+                    else:
+                        # High solar generation
+                        if solar_generation > 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.9
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.6
+                        elif 0.3 <= solar_generation <= 0.6:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.7
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.45
+                        else:
+                            if electricity_pricing < 0.03:
+                                action[available_act.index('electrical_storage')] = 0.6
+                            else:
+                                action[available_act.index('electrical_storage')] = 0.4
 
             if 'dhw_storage' in available_act:
-                if dhw_storage_soc == 1.0:
-                    action[available_act.index('dhw_storage')] = -0.5
-                elif dhw_storage_soc == 0.0:
-                    action[available_act.index('dhw_storage')] = 0.5
-
-                else:
-                    # Peak hours or high DHW demand
-                    if (8 <= hour <= 10) or (18 <= hour <= 21) or (dhw_demand > 0.6):
-                        # High electricity price -> discharge
-                        if electricity_pricing > 0.03:
-                            action[available_act.index('dhw_storage')] = -0.4
-                        # Low electricity price -> lower discharge
-                        else:
+                if 0.7 <= dhw_storage_soc <= 1.0:
+                    # Peak hours
+                    if 6 <= hour <= 9 or 18 <= hour <= 22:
+                        # High demand or high electricity price
+                        if dhw_demand >= 0.6 or electricity_pricing > 0.03:
+                            action[available_act.index('dhw_storage')] = -0.6
+                        # Low demand
+                        elif dhw_demand < 0.3:
                             action[available_act.index('dhw_storage')] = -0.2
-                    # High solar generation during peak hours -> charge
-                    elif 10 <= hour <= 15 and solar_generation > 0.2:
-                        action[available_act.index('dhw_storage')] = 0.4
-                    
-                    # Off-peak hours -> charge
-                    elif 0 <= hour <= 5:
-                        # Low electricity price -> high charge
-                        if electricity_pricing <= 0.03:
-                            action[available_act.index('dhw_storage')] = 0.4
-                        # High electricity price -> medium charge
-                        elif electricity_pricing > 0.03:
-                            action[available_act.index('dhw_storage')] = 0.2
-                        # Low electricity price + high solar generation
-                        elif electricity_pricing <= 0.03 and solar_generation > 0.2:
-                            action[available_act.index('dhw_storage')] = 0.5
-                
-                    # Default action
-                    else:
-                        if dhw_storage_soc >= 0.5:
-                            action[available_act.index('dhw_storage')] = -0.33
+                        # Default action
                         else:
-                            action[available_act.index('dhw_storage')] = 0.33
+                            action[available_act.index('dhw_storage')] = -0.35
+                    # Off-peak hours with possible high solar generation
+                    elif 10 <= hour <= 16:
+                        # High solar generation and low electricity price
+                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                            action[available_act.index('dhw_storage')] = 0.4
+                        # Medium solar generation
+                        elif 0.2 <= solar_generation <= 0.6:
+                            action[available_act.index('dhw_storage')] = 0.25
+                        # Low solar generation -> default action
+                        else:
+                            action[available_act.index('dhw_storage')] = 0.0
+                    # Night hours -> high dhw storage state of charge so no action
+                    else:
+                        action[available_act.index('dhw_storage')] = 0.0
+                
+                elif 0.4 <= dhw_storage_soc < 0.7:
+                    # Peak hours
+                    if 6 <= hour <= 9 or 18 <= hour <= 22:
+                        # High demand or high electricity price
+                        if dhw_demand >= 0.6 or electricity_pricing > 0.03:
+                            action[available_act.index('dhw_storage')] = -0.4
+                        # Low demand
+                        elif dhw_demand < 0.3:
+                            action[available_act.index('dhw_storage')] = -0.15
+                        # Default action
+                        else:
+                            action[available_act.index('dhw_storage')] = -0.25
+                    # Off-peak hours with possible high solar generation
+                    elif 10 <= hour <= 16:
+                        # High solar generation and low electricity price
+                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                            action[available_act.index('dhw_storage')] = 0.65
+                        # Medium solar generation
+                        elif 0.2 <= solar_generation <= 0.6:
+                            action[available_act.index('dhw_storage')] = 0.35
+                        # Low solar generation -> default action
+                        else:
+                            action[available_act.index('dhw_storage')] = 0.15
+                    # Night hours -> high dhw storage state of charge so no action
+                    else:
+                        action[available_act.index('dhw_storage')] = 0.5
+
+                # Very low state of charge
+                else:
+                    # Peak hours -> minimal discharge
+                    if 6 <= hour <= 9 or 18 <= hour <= 22:
+                        action[available_act.index('dhw_storage')] = -0.01
+                    # Off-peak hours with possible high solar generation
+                    elif 10 <= hour <= 16:
+                        # High solar generation and low electricity price
+                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                            action[available_act.index('dhw_storage')] = 0.8
+                        # Medium solar generation
+                        elif 0.2 <= solar_generation <= 0.6:
+                            action[available_act.index('dhw_storage')] = 0.6
+                        # Low solar generation -> default action
+                        else:
+                            action[available_act.index('dhw_storage')] = 0.4
+                    # Night hours -> low dhw storage state of charge so charge
+                    else:
+                        action[available_act.index('dhw_storage')] = 0.7
 
             # Actions value per hour
             debug_action_dict = {}
@@ -459,7 +565,7 @@ def run_simulation(agent, env):
     observations, _ = env.reset()
     max_steps = env.time_steps - 1
 
-    # KPI logging: weekly and daily. Each time step is 1 hour.
+    # KPI logging: weekly and daily.
     weekly_interval_steps = 7 * 24  # 168 steps
     daily_interval_steps = 1 * 24   # 24 steps
     kpi_dir = 'kpi_logs'
