@@ -501,7 +501,7 @@ def run_simulation(agent, env):
     observations, _ = env.reset()
     max_steps = env.time_steps - 1
 
-    # KPI logging: weekly and daily. Each time step is 1 hour.
+    # KPI logging: weekly and daily.
     weekly_interval_steps = 7 * 24  # 168 steps
     daily_interval_steps = 1 * 24   # 24 steps
     kpi_dir = 'kpi_logs'
@@ -531,7 +531,6 @@ def run_simulation(agent, env):
     _append_kpis(0, weekly_kpi_file)
 
     step_index = 0
-    
     for _ in range(max_steps):
         actions = agent.predict(observations)
         observations, reward, terminated, truncated, info = env.step(actions)
