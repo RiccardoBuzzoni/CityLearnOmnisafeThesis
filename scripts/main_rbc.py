@@ -564,49 +564,9 @@ def run_simulation(agent, env):
     print(f"Agent: {agent.__class__.__name__}")
     observations, _ = env.reset()
     max_steps = env.time_steps - 1
-
-    # KPI logging: weekly and daily.
-    weekly_interval_steps = 7 * 24  # 168 steps
-    daily_interval_steps = 1 * 24   # 24 steps
-    kpi_dir = 'kpi_logs'
-    weekly_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_weekly_kpis_log.txt')
-    daily_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_daily_kpis_log.txt')
-    os.makedirs(kpi_dir, exist_ok=True)
-
-    def _append_kpis(step_index: int, filepath: str):
-        try:
-            kpis = get_kpis(env)
-            # Filter district-level KPIs
-            kpis = kpis[kpis['level'] == 'district']
-
-            day = step_index // 24
-            with open(filepath, 'a') as fh:
-                fh.write(f'--- STEP: {step_index} (day {day}) ---\n')
-                for _, row in kpis.iterrows():
-                    fh.write(f"{row['kpi']}: {row['value']}\n")
-                fh.write('\n')
-        except Exception as e:
-            # Debugging log
-            with open(filepath, 'a') as fh:
-                fh.write(f'Failed to write KPIs at step {step_index}: {e}\n\n')
-
-    # Initial KPI snapshots at start (step 0)
-    _append_kpis(0, daily_kpi_file)
-    _append_kpis(0, weekly_kpi_file)
-
-    step_index = 0
     for _ in range(max_steps):
         actions = agent.predict(observations)
         observations, reward, terminated, truncated, info = env.step(actions)
-        step_index += 1
-
-        # Write daily KPIs every daily_interval_steps
-        if step_index % daily_interval_steps == 0:
-            _append_kpis(step_index, daily_kpi_file)
-
-        # Write weekly KPIs every weekly_interval_steps
-        if step_index % weekly_interval_steps == 0:
-            _append_kpis(step_index, weekly_kpi_file)
 
     print("Simulation completed.\n")
 
