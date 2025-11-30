@@ -89,21 +89,21 @@ class AdvancedRBC(Agent):
 
             # Outdoor temperature
             outdoor_temp = o[available_obs.index('outdoor_dry_bulb_temperature')]
-            predicted_outdoor_temperature = o[available_obs.index('outdoor_dry_bulb_temperature_predicted_1')]
+            predicted_outdoor_temp = o[available_obs.index('outdoor_dry_bulb_temperature_predicted_1')]
 
             # Cooling demand
             cooling_demand = o[available_obs.index('cooling_demand')]
 
             # Electricity pricing
-            electricity_pricing = o[available_obs.index('electricity_pricing')]
+            elec_price = o[available_obs.index('electricity_pricing')]
 
             # Emission
-            carbon_intensity = o[available_obs.index('carbon_intensity')]
+            carbon_int = o[available_obs.index('carbon_intensity')]
 
             # Solar generation
-            solar_generation = o[available_obs.index('solar_generation')]
+            solar_gen = o[available_obs.index('solar_generation')]
 
-            # Occupatns presence
+            # Occupants presence
             occupants_present = o[available_obs.index('occupant_count')]    
 
             # Hours of the day
@@ -122,7 +122,7 @@ class AdvancedRBC(Agent):
                 # Peak hours
                 if 12 <= hour <= 17:
                     if indoor_temp > cooling_setpoint + self.comfort_band:
-                        if occupant_present == 0:
+                        if occupants_present == 0:
                             action[available_act.index('cooling_device')] = 0.0
                         else:
                             # Carbon emission evaluation
@@ -144,7 +144,7 @@ class AdvancedRBC(Agent):
                                     else:
                                         action[available_act.index('cooling_device')] = 0.8
                                 # Low electricity price + high solar generation
-                                if elec_price <= 0.03 and solar_gen > 0.2:
+                                elif elec_price <= 0.03 and solar_gen > 0.2:
                                     if outdoor_temp < cooling_setpoint:
                                         action[available_act.index('cooling_device')] = 0.7
                                     elif predicted_outdoor_temp < cooling_setpoint:
@@ -152,7 +152,7 @@ class AdvancedRBC(Agent):
                                     else:
                                         action[available_act.index('cooling_device')] = 0.1
                                 # High electricity price + high solar generation
-                                if elec_price > 0.03 and solar_gen > 0.2:
+                                elif elec_price > 0.03 and solar_gen > 0.2:
                                     if outdoor_temp < cooling_setpoint:
                                         action[available_act.index('cooling_device')] = 0.5
                                     elif predicted_outdoor_temp < cooling_setpoint:
@@ -180,15 +180,15 @@ class AdvancedRBC(Agent):
                                     else:
                                         action[available_act.index('cooling_device')] = 0.7
                                 # Low electricity price + high solar generation
-                                if elec_price <= 0.03 and solar_gen > 0.2:
+                                elif elec_price <= 0.03 and solar_gen > 0.2:
                                     if outdoor_temp < cooling_setpoint:
                                         action[available_act.index('cooling_device')] = 0.6
                                     elif predicted_outdoor_temp < cooling_setpoint:
                                         action[available_act.index('cooling_device')] = 0.8
                                     else:
                                         action[available_act.index('cooling_device')] = 1.0
-                                # High electricity price + high solar generatio
-                                if elec_price > 0.03 and solar_gen > 0.2:
+                                # High electricity price + high solar generation
+                                elif elec_price > 0.03 and solar_gen > 0.2:
                                     if outdoor_temp < cooling_setpoint:
                                         action[available_act.index('cooling_device')] = 0.4
                                     elif predicted_outdoor_temp < cooling_setpoint:
@@ -209,7 +209,7 @@ class AdvancedRBC(Agent):
 
                 # Off-peak hours
                 else:
-                    # Indoor temperature avove setpoint + comfort band
+                    # Indoor temperature above setpoint + comfort band
                     if indoor_temp > cooling_setpoint + self.comfort_band:
                         # Carbon emission evaluation
                         if carbon_int < 0.40:
@@ -298,18 +298,18 @@ class AdvancedRBC(Agent):
                     # Peak hours -> discharge
                     if 8 <= hour <= 10 or 18 <= hour <= 21:
                         # High solar generation
-                        if solar_generation > 0.6:
-                            if electricity_pricing < 0.03:
+                        if solar_gen > 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.66
                             else:
                                 action[available_act.index('electrical_storage')] = -0.85
-                        elif 0.3 <= solar_generation <= 0.6:
-                            if electricity_pricing < 0.03:
+                        elif 0.3 <= solar_gen <= 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.45
                             else:
                                 action[available_act.index('electrical_storage')] = -0.6
                         else:
-                            if electricity_pricing < 0.03:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.3
                             else:
                                 action[available_act.index('electrical_storage')] = -0.4
@@ -321,36 +321,36 @@ class AdvancedRBC(Agent):
                     # Peak hours -> discharge
                     if 8 <= hour <= 10 or 18 <= hour <= 21:
                         # High solar generation
-                        if solar_generation > 0.6:
-                            if electricity_pricing < 0.03:
+                        if solar_gen > 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.5
                             else:
                                 action[available_act.index('electrical_storage')] = -0.6
-                        elif 0.3 <= solar_generation <= 0.6:
-                            if electricity_pricing < 0.03:
+                        elif 0.3 <= solar_gen <= 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.35
                             else:
                                 action[available_act.index('electrical_storage')] = -0.45
                         else:
-                            if electricity_pricing < 0.03:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = -0.15
                             else:
                                 action[available_act.index('electrical_storage')] = -0.3
                     # Off-peak hours
                     else:
                         # High solar generation
-                        if solar_generation > 0.6:
-                            if electricity_pricing < 0.03:
+                        if solar_gen > 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.5
                             else:
                                 action[available_act.index('electrical_storage')] = 0.35
-                        elif 0.3 <= solar_generation <= 0.6:
-                            if electricity_pricing < 0.03:
+                        elif 0.3 <= solar_gen <= 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.4
                             else:
                                 action[available_act.index('electrical_storage')] = 0.25
                         else:
-                            if electricity_pricing < 0.03:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.3
                             else:
                                 action[available_act.index('electrical_storage')] = 0.15
@@ -362,18 +362,18 @@ class AdvancedRBC(Agent):
                     # Off-peak hours -> charge
                     else:
                         # High solar generation
-                        if solar_generation > 0.6:
-                            if electricity_pricing < 0.03:
+                        if solar_gen > 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.7
                             else:
                                 action[available_act.index('electrical_storage')] = 0.55
-                        elif 0.3 <= solar_generation <= 0.6:
-                            if electricity_pricing < 0.03:
+                        elif 0.3 <= solar_gen <= 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.65
                             else:
                                 action[available_act.index('electrical_storage')] = 0.4
                         else:
-                            if electricity_pricing < 0.03:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.5
                             else:
                                 action[available_act.index('electrical_storage')] = 0.3
@@ -386,18 +386,18 @@ class AdvancedRBC(Agent):
                     # Off-peak hours -> charge
                     else:
                         # High solar generation
-                        if solar_generation > 0.6:
-                            if electricity_pricing < 0.03:
+                        if solar_gen > 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.9
                             else:
                                 action[available_act.index('electrical_storage')] = 0.6
-                        elif 0.3 <= solar_generation <= 0.6:
-                            if electricity_pricing < 0.03:
+                        elif 0.3 <= solar_gen <= 0.6:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.7
                             else:
                                 action[available_act.index('electrical_storage')] = 0.45
                         else:
-                            if electricity_pricing < 0.03:
+                            if elec_price < 0.03:
                                 action[available_act.index('electrical_storage')] = 0.6
                             else:
                                 action[available_act.index('electrical_storage')] = 0.4
@@ -407,7 +407,7 @@ class AdvancedRBC(Agent):
                     # Peak hours
                     if 6 <= hour <= 9 or 18 <= hour <= 22:
                         # High demand or high electricity price
-                        if dhw_demand >= 0.6 or electricity_pricing > 0.03:
+                        if dhw_demand >= 0.6 or elec_price > 0.03:
                             action[available_act.index('dhw_storage')] = -0.6
                         # Low demand
                         elif dhw_demand < 0.3:
@@ -418,10 +418,10 @@ class AdvancedRBC(Agent):
                     # Off-peak hours with possible high solar generation
                     elif 10 <= hour <= 16:
                         # High solar generation and low electricity price
-                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                        if solar_gen > 0.6 and elec_price < 0.03:
                             action[available_act.index('dhw_storage')] = 0.4
                         # Medium solar generation
-                        elif 0.2 <= solar_generation <= 0.6:
+                        elif 0.2 <= solar_gen <= 0.6:
                             action[available_act.index('dhw_storage')] = 0.25
                         # Low solar generation -> default action
                         else:
@@ -434,7 +434,7 @@ class AdvancedRBC(Agent):
                     # Peak hours
                     if 6 <= hour <= 9 or 18 <= hour <= 22:
                         # High demand or high electricity price
-                        if dhw_demand >= 0.6 or electricity_pricing > 0.03:
+                        if dhw_demand >= 0.6 or elec_price > 0.03:
                             action[available_act.index('dhw_storage')] = -0.4
                         # Low demand
                         elif dhw_demand < 0.3:
@@ -445,10 +445,10 @@ class AdvancedRBC(Agent):
                     # Off-peak hours with possible high solar generation
                     elif 10 <= hour <= 16:
                         # High solar generation and low electricity price
-                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                        if solar_gen > 0.6 and elec_price < 0.03:
                             action[available_act.index('dhw_storage')] = 0.65
                         # Medium solar generation
-                        elif 0.2 <= solar_generation <= 0.6:
+                        elif 0.2 <= solar_gen <= 0.6:
                             action[available_act.index('dhw_storage')] = 0.35
                         # Low solar generation -> default action
                         else:
@@ -465,10 +465,10 @@ class AdvancedRBC(Agent):
                     # Off-peak hours with possible high solar generation
                     elif 10 <= hour <= 16:
                         # High solar generation and low electricity price
-                        if solar_generation > 0.6 and electricity_pricing < 0.03:
+                        if solar_gen > 0.6 and elec_price < 0.03:
                             action[available_act.index('dhw_storage')] = 0.8
                         # Medium solar generation
-                        elif 0.2 <= solar_generation <= 0.6:
+                        elif 0.2 <= solar_gen <= 0.6:
                             action[available_act.index('dhw_storage')] = 0.6
                         # Low solar generation -> default action
                         else:
@@ -477,7 +477,8 @@ class AdvancedRBC(Agent):
                     else:
                         action[available_act.index('dhw_storage')] = 0.7
 
-            # Actions value per hour
+            # Debugging log for actions values and observations values -> Can be modified as needed
+            # Actions value logging should be implemented in a more structured way for UserRBC
             debug_action_dict = {}
             if 'cooling_device' in available_act:
                 debug_action_dict['cooling_device'] = action[available_act.index('cooling_device')]
@@ -501,10 +502,12 @@ def run_simulation(agent, env):
     observations, _ = env.reset()
     max_steps = env.time_steps - 1
 
-    # KPI logging: weekly and daily.
+    # KPI logging: weekly and daily -> To implement in UserRBC
     weekly_interval_steps = 7 * 24  # 168 steps
     daily_interval_steps = 1 * 24   # 24 steps
     kpi_dir = 'kpi_logs'
+    # Log files for weekly and daily KPIs are saved as .txt files
+    # Change from .csv to .txt for better readability has been taken into consideration for UserRBC
     weekly_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_weekly_kpis_log.txt')
     daily_kpi_file = os.path.join(kpi_dir, f'{agent.__class__.__name__}_daily_kpis_log.txt')
     os.makedirs(kpi_dir, exist_ok=True)
