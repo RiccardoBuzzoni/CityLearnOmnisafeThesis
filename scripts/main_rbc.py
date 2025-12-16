@@ -161,6 +161,7 @@ class AdvancedRBC(Agent):
                                         action[available_act.index('cooling_device')] = 0.9
                                 # Default action
                                     action[available_act.index('cooling_device')] = 0.66
+                            
                             # High carbon emission
                             else:
                                 # Low electricity price
@@ -197,6 +198,7 @@ class AdvancedRBC(Agent):
                                         action[available_act.index('cooling_device')] = 0.6
                                 # Default action
                                 action[available_act.index('cooling_device')] = 0.55
+                            
                     
                     # Cooling demand evaluation
                     else:
@@ -211,78 +213,82 @@ class AdvancedRBC(Agent):
                 else:
                     # Indoor temperature above setpoint + comfort band
                     if indoor_temp > cooling_setpoint + self.comfort_band:
-                        # Carbon emission evaluation
-                        if carbon_int < 0.40:
-                            # Low electricity price
-                            if elec_price <= 0.03:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.4
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.6
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.8
-                            # High electricity price
-                            elif elec_price > 0.03:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.25
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.4
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.6
-                            # Low electricity price + high solar generation
-                            if elec_price <= 0.03 and solar_gen > 0.2:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.5
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.7
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.9
-                            # High electricity price + high solar generation
-                            if elec_price > 0.03 and solar_gen > 0.2:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.3
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.5
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.7
-                            # Default action
-                            action[available_act.index('cooling_device')] = 0.5
-                        # High carbon emission
+                        if occupants_present == 0:
+                            action[available_act.index('cooling_device')] = 0.0
                         else:
-                            # Low electricity price
-                            if elec_price <= 0.03:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.3
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.5
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.7
-                            # High electricity price
-                            elif elec_price > 0.03:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.2
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.3
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.5
-                            # Low electricity price + high solar generation
-                            if elec_price <= 0.03 and solar_gen > 0.2:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.4
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.6
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.8
-                            # High electricity price + high solar generation
-                            if elec_price > 0.03 and solar_gen > 0.2:
-                                if outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.25
-                                elif predicted_outdoor_temp < cooling_setpoint:
-                                    action[available_act.index('cooling_device')] = 0.4
-                                else:
-                                    action[available_act.index('cooling_device')] = 0.6
-                            # Default action
-                            action[available_act.index('cooling_device')] = 0.44
+                            # Carbon emission evaluation
+                            if carbon_int < 0.40:
+                                # Low electricity price
+                                if elec_price <= 0.03:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.4
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.6
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.8
+                                # High electricity price
+                                elif elec_price > 0.03:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.25
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.4
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.6
+                                # Low electricity price + high solar generation
+                                if elec_price <= 0.03 and solar_gen > 0.2:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.5
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.7
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.9
+                                # High electricity price + high solar generation
+                                if elec_price > 0.03 and solar_gen > 0.2:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.3
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.5
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.7
+                                # Default action
+                                action[available_act.index('cooling_device')] = 0.5
+                            
+                            # High carbon emission
+                            else:
+                                # Low electricity price
+                                if elec_price <= 0.03:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.3
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.5
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.7
+                                # High electricity price
+                                elif elec_price > 0.03:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.2
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.3
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.5
+                                # Low electricity price + high solar generation
+                                if elec_price <= 0.03 and solar_gen > 0.2:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.4
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.6
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.8
+                                # High electricity price + high solar generation
+                                if elec_price > 0.03 and solar_gen > 0.2:
+                                    if outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.25
+                                    elif predicted_outdoor_temp < cooling_setpoint:
+                                        action[available_act.index('cooling_device')] = 0.4
+                                    else:
+                                        action[available_act.index('cooling_device')] = 0.6
+                                # Default action
+                                action[available_act.index('cooling_device')] = 0.44
                     
                     # Cooling demand evaluation
                     else:
