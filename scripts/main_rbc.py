@@ -13,6 +13,7 @@ from typing import Mapping, Union
 import warnings; warnings.filterwarnings("ignore", category=UserWarning)
 from utils import *
 
+'''
 class CustomRBC(BasicRBC):
 
     def __init__(self, env: CityLearnEnv, **kwargs: Any):
@@ -52,6 +53,7 @@ class CustomRBC(BasicRBC):
                 
         # Imposta la mappa nella superclasse
         HourRBC.action_map.fset(self, action_map)
+'''
 
 class AdvancedRBC(Agent):
     """
