@@ -135,7 +135,7 @@ def plot_dhw_storage(res_rbc, save_path='dhw_storage_soc.png'):
     ax1.plot(time_steps, dhw_soc, label='DHW Storage SoC', linewidth=1.5, color='tab:blue')
 
     # Labels for SoC
-    ax1.set_ylabel('State of Charge (kWh/hWh_capacity)')
+    ax1.set_ylabel('State of Charge (kWh/kWh_capacity)')
     ax1.set_xlabel('Time Step (Hours)')
     ax1.grid(True, alpha=0.3)
 
