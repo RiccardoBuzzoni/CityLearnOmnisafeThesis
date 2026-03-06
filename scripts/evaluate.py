@@ -279,8 +279,6 @@ def collect_data(agent_class, env):
         actions = agent.predict(obs)
         next_obs, rewards, terminated, truncated, info = env.step(actions)
 
-        b = env.buildings[0]
-
         # Helper per evitare KeyError se un'osservazione non è presente
         def get_obs(name):
             return obs[0][obs_names.index(name)] if name in obs_names else None
@@ -353,7 +351,7 @@ def main():
     df = collect_data(AdvancedRBC, env)
     df.to_csv('results/advanced_rbc_results.csv', index=False)
     print(df.shape)
-    print(df.head())
+    print(f"CSV file was successfully saved")
 
 if __name__ == '__main__':
     main()
