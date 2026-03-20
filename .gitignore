@@ -24,3 +24,9 @@
 
 # Distribution files
 **/*.egg-info/*
+
+# Linear regression result plots
+**/linear_regressor_results/*
+
+# LIME result plots
+**/lime_results/*
