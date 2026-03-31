@@ -30,3 +30,6 @@
 
 # LIME result plots
 **/lime_results/*
+
+# Evaluation plots
+**/evaluation_plots/*

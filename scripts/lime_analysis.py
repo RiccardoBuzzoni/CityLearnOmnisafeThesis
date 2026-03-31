@@ -21,19 +21,15 @@ from rbc_linear_regressor import (
 # 1. CONFIGURATION
 # ──────────────────────────────────────────────
 
-# Target to focus LIME analysis on (the anomalous one identified during evaluation)
-LIME_TARGET = "electrical_storage"
+# Targets to analyse — all three actions
+LIME_TARGETS = TARGET_COLS  # ["cooling_device", "dhw_storage", "electrical_storage"]
 
 # Output directory for LIME plots
 LIME_OUTPUT_DIR = "lime_results"
-os.makedirs(LIME_OUTPUT_DIR, exist_ok = True)
+os.makedirs(LIME_OUTPUT_DIR, exist_ok=True)
 
 # Number of samples LIME uses internally to fit its local linear approximation
 LIME_N_SAMPLES = 1000
-
-# Number of top features shown in each LIME explanation bar chart
-# Set automatically to the number of domain features for the target
-LIME_TOP_FEATURES = len(DOMAIN_FEATURES[LIME_TARGET])
 
 SEED = 42
 np.random.seed(SEED)
@@ -157,7 +153,7 @@ def run_lime(
     explanation = explainer.explain_instance(
         data_row     = instance,
         predict_fn   = predict_fn,
-        num_features = LIME_TOP_FEATURES,
+        num_features = len(DOMAIN_FEATURES[target_name]),
         num_samples  = LIME_N_SAMPLES,
     )
 
@@ -249,71 +245,72 @@ def main():
 
     # ── Reload raw data and rebuild eval split ────────────────────────
     df = pd.read_csv(DATA_PATH)
-    X = df[FEATURE_COLS].values
-    Y = df[TARGET_COLS].values
+    X  = df[FEATURE_COLS].values
+    Y  = df[TARGET_COLS].values
 
     X_train_raw = X[:TRAIN_STEPS]
     X_eval_raw  = X[TRAIN_STEPS:]
-    Y_eval = Y[TRAIN_STEPS:]
+    Y_eval      = Y[TRAIN_STEPS:]
 
     # Re-apply normalisation using the same train statistics
     X_train_norm_all = (X_train_raw - mean) / std
-    X_eval_norm_all = (X_eval_raw  - mean) / std
+    X_eval_norm_all  = (X_eval_raw  - mean) / std
 
-    # ── Focus on the target of interest ──────────────────────────────
-    target_idx = TARGET_COLS.index(LIME_TARGET)
-    y_eval = Y_eval[:, target_idx]
-    model = trained_models[LIME_TARGET]
-    domain_feats = trained_features[LIME_TARGET]
-    col_idx = [FEATURE_COLS.index(f) for f in domain_feats]
+    # ── Iterate over all three targets ───────────────────────────────
+    for target in LIME_TARGETS:
+        print(f"\n{'═'*50}")
+        print(f"LIME analysis — {target}")
 
-    # Slice only the domain-relevant columns (consistent with training)
-    X_train_lime = X_train_norm_all[:, col_idx]   # (N_train, n_feats)
-    X_eval_lime = X_eval_norm_all[:,  col_idx]   # (N_eval,  n_feats)
+        target_idx   = TARGET_COLS.index(target)
+        y_eval       = Y_eval[:, target_idx]
+        model        = trained_models[target]
+        domain_feats = trained_features[target]
+        col_idx      = [FEATURE_COLS.index(f) for f in domain_feats]
 
-    predict_fn = make_predict_fn(model)
+        # Slice domain-relevant columns
+        X_train_lime = X_train_norm_all[:, col_idx]
+        X_eval_lime  = X_eval_norm_all[:,  col_idx]
 
-    # ── Build LIME explainer on the domain-filtered training set ──────
-    # Using only the features the model was trained on ensures that
-    # LIME's perturbations stay within the model's input distribution.
-    explainer = LimeTabularExplainer(
-        training_data = X_train_lime,
-        feature_names = domain_feats,
-        mode = "regression",
-        random_state = SEED,
-    )
+        predict_fn = make_predict_fn(model)
 
-    # ── Select representative timesteps ──────────────────────────────
-    rep_timesteps = select_representative_timesteps(X_eval_lime, y_eval, model)
-
-    print(f"\nRepresentative timesteps for '{LIME_TARGET}':")
-    for label, local_idx in rep_timesteps.items():
-        print(f"  {label:<15} → eval index {local_idx:>3}  "
-              f"| true action: {y_eval[local_idx]:.3f}")
-
-    # ── Run LIME on each representative timestep ──────────────────────
-    all_weights: dict[str, list] = {}
-
-    print(f"\nRunning LIME analysis ({len(rep_timesteps)} timesteps)...")
-    for label, local_idx in rep_timesteps.items():
-        instance = X_eval_lime[local_idx]
-        true_val = y_eval[local_idx]
-        pred_val = float(predict_fn(instance.reshape(1, -1))[0])
-
-        fw = run_lime(
-            explainer = explainer,
-            predict_fn = predict_fn,
-            instance = instance,
-            label = label,
-            target_name = LIME_TARGET,
-            true_val = true_val,
-            pred_val = pred_val,
-            save_dir = LIME_OUTPUT_DIR,
+        # Build LIME explainer on the domain-filtered training set
+        explainer = LimeTabularExplainer(
+            training_data = X_train_lime,
+            feature_names = domain_feats,
+            mode          = "regression",
+            random_state  = SEED,
         )
-        all_weights[label] = fw
 
-    # ── Plot mean feature importance across all timesteps ─────────────
-    plot_mean_importance(all_weights, LIME_TARGET, LIME_OUTPUT_DIR)
+        # Select representative timesteps
+        rep_timesteps = select_representative_timesteps(X_eval_lime, y_eval, model)
+
+        print(f"Representative timesteps:")
+        for label, local_idx in rep_timesteps.items():
+            print(f"  {label:<15} → eval index {local_idx:>3}  "
+                  f"| true action: {y_eval[local_idx]:.3f}")
+
+        # Run LIME on each representative timestep to accumulate weights
+        all_weights: dict[str, list] = {}
+
+        print(f"Running LIME ({len(rep_timesteps)} timesteps)...")
+        for label, local_idx in rep_timesteps.items():
+            instance = X_eval_lime[local_idx]
+            true_val = y_eval[local_idx]
+            pred_val = float(predict_fn(instance.reshape(1, -1))[0])
+
+            explanation = explainer.explain_instance(
+                data_row     = instance,
+                predict_fn   = predict_fn,
+                num_features = len(domain_feats),
+                num_samples  = LIME_N_SAMPLES,
+            )
+            fw = explanation.as_list()
+            fw.sort(key=lambda x: abs(x[1]), reverse=True)
+            all_weights[label] = fw
+            print(f"  {label:<15} | true: {true_val:.3f} | pred: {pred_val:.3f}")
+
+        # Plot mean feature importance for this target
+        plot_mean_importance(all_weights, target, LIME_OUTPUT_DIR)
 
     print("\nLIME analysis complete.")
 

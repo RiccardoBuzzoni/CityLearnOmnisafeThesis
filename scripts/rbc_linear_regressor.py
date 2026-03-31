@@ -39,7 +39,7 @@ DOMAIN_FEATURES: dict[str, list[str]] = {
     ],
     "electrical_storage": [
         "hour", "electrical_storage_soc",
-        "solar_generation", "elec_price", "carbon_intensity",
+        "solar_generation", "elec_price",
     ],
 }
 
@@ -47,7 +47,7 @@ DOMAIN_FEATURES: dict[str, list[str]] = {
 # remaining ~215 timesteps (~1 week) for evaluation
 TRAIN_STEPS = 504
 
-EPOCHS = 200
+EPOCHS = 500
 LR = 1e-3
 BATCH_SIZE = 32
 SEED = 42
