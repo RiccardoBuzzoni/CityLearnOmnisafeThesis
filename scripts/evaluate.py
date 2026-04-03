@@ -12,6 +12,9 @@ from utils import Config, default_env_config, select_env_config
 # Import of AdvancedRBC agent
 from main_rbc import AdvancedRBC
 
+# Import of LimeGuidedRBC agent
+from new_rbc import LimeGuidedRBC
+
 # Import of LinearRegressor and domain feature configuration
 from rbc_linear_regressor import (
     LinearRegressor,
@@ -20,7 +23,6 @@ from rbc_linear_regressor import (
     DOMAIN_FEATURES,
     main as train_linear_models,
 )
-
 
 # ──────────────────────────────────────────────
 # LINEAR REGRESSOR AGENT
@@ -58,11 +60,11 @@ class LinearRegressorAgent:
         mean: np.ndarray,
         std: np.ndarray,
     ):
-        self.env             = env
-        self.trained_models  = trained_models
+        self.env = env
+        self.trained_models = trained_models
         self.trained_features = trained_features
-        self.mean            = mean
-        self.std             = std
+        self.mean = mean
+        self.std = std
 
         # Pre-compute column indices for each target to avoid repeated lookups
         self._col_idx: dict[str, list[int]] = {
@@ -103,11 +105,11 @@ class LinearRegressorAgent:
             for target in TARGET_COLS:
                 if target not in act_names:
                     continue
-                model    = self.trained_models[target]
-                col_idx  = self._col_idx[target]
-                x        = torch.tensor(
+                model = self.trained_models[target]
+                col_idx = self._col_idx[target]
+                x = torch.tensor(
                     full_obs_norm[col_idx], dtype=torch.float32
-                ).unsqueeze(0)   # shape (1, n_feats)
+                ).unsqueeze(0)  # shape (1, n_feats)
 
                 model.eval()
                 with torch.no_grad():
@@ -116,13 +118,13 @@ class LinearRegressorAgent:
                 action[act_names.index(target)] = pred
 
             # Clip actions to their physical bounds:
-            # cooling_device ∈ [0, 1]  — cannot be negative (no reverse cooling)
-            # dhw_storage    ∈ [-1, 1]
+            # cooling_device ∈ [0, 1] — cannot be negative (no reverse cooling)
+            # dhw_storage ∈ [-1, 1]
             # electrical_storage ∈ [-1, 1]
             CLIP_BOUNDS: dict[str, tuple[float, float]] = {
-                "cooling_device":      (0.0,  1.0),
-                "dhw_storage":         (-1.0, 1.0),
-                "electrical_storage":  (-1.0, 1.0),
+                "cooling_device": (0.0, 1.0),
+                "dhw_storage": (-1.0, 1.0),
+                "electrical_storage": (-1.0, 1.0),
             }
             for target, (lo, hi) in CLIP_BOUNDS.items():
                 if target in act_names:
@@ -147,12 +149,12 @@ def plot_cooling_device(res_rbc, res_reg=None, save_path='cooling_device.png'):
         res_reg: Optional dictionary containing the results from the LinearRegressorAgent.
         save_path: Path where the plot will be saved.
     '''
-    time_steps   = range(res_rbc['env_h']['time_steps'])
-    temp_data    = res_rbc['env_h']['temperature']
-    indoor_temp  = np.array(temp_data['indoor_dry_bulb_temperature'])
-    set_point    = np.array(temp_data['indoor_dry_bulb_temperature_set_point'])
+    time_steps = range(res_rbc['env_h']['time_steps'])
+    temp_data = res_rbc['env_h']['temperature']
+    indoor_temp = np.array(temp_data['indoor_dry_bulb_temperature'])
+    set_point = np.array(temp_data['indoor_dry_bulb_temperature_set_point'])
     comfort_band = np.array(temp_data['comfort_band'])
-    action_rbc   = np.array(res_rbc['env_h']['actions']['cooling_device'])
+    action_rbc = np.array(res_rbc['env_h']['actions']['cooling_device'])
 
     fig, ax1 = plt.subplots(figsize=(20, 6))
     ax1.set_title('Cooling Device — Action Value and Indoor Temperature')
@@ -178,7 +180,7 @@ def plot_cooling_device(res_rbc, res_reg=None, save_path='cooling_device.png'):
 
     if res_reg is not None:
         indoor_temp_reg = np.array(res_reg['env_h']['temperature']['indoor_dry_bulb_temperature'])
-        action_reg      = np.array(res_reg['env_h']['actions']['cooling_device'])
+        action_reg = np.array(res_reg['env_h']['actions']['cooling_device'])
 
         ax1.plot(time_steps, indoor_temp_reg,
                  label='Indoor Temp (Regressor)', linewidth=1.5,
@@ -212,9 +214,9 @@ def plot_dhw_storage(res_rbc, res_reg=None, save_path='dhw_storage.png'):
         res_reg: Optional dictionary containing the results from the LinearRegressorAgent.
         save_path: Path where the plot will be saved.
     '''
-    time_steps  = range(res_rbc['env_h']['time_steps'])
-    soc_rbc     = np.array(res_rbc['env_h']['dhw']['dhw_storage_soc'])
-    action_rbc  = np.array(res_rbc['env_h']['actions']['dhw_storage'])
+    time_steps = range(res_rbc['env_h']['time_steps'])
+    soc_rbc = np.array(res_rbc['env_h']['dhw']['dhw_storage_soc'])
+    action_rbc = np.array(res_rbc['env_h']['actions']['dhw_storage'])
 
     fig, ax1 = plt.subplots(figsize=(20, 6))
     ax1.set_title('DHW Storage — Action Value and State of Charge')
@@ -230,7 +232,7 @@ def plot_dhw_storage(res_rbc, res_reg=None, save_path='dhw_storage.png'):
              label='dhw_storage action (RBC)', linewidth=1.0, color='tab:red')
 
     if res_reg is not None:
-        soc_reg    = np.array(res_reg['env_h']['dhw']['dhw_storage_soc'])
+        soc_reg = np.array(res_reg['env_h']['dhw']['dhw_storage_soc'])
         action_reg = np.array(res_reg['env_h']['actions']['dhw_storage'])
 
         ax1.plot(time_steps, soc_reg,
@@ -266,9 +268,9 @@ def plot_electrical_storage(res_rbc, res_reg=None, save_path='electrical_storage
         res_reg: Optional dictionary containing the results from the LinearRegressorAgent.
         save_path: Path where the plot will be saved.
     '''
-    time_steps  = range(res_rbc['env_h']['time_steps'])
-    soc_rbc     = np.array(res_rbc['env_h']['electrical_storage_soc'])
-    action_rbc  = np.array(res_rbc['env_h']['actions']['electrical_storage'])
+    time_steps = range(res_rbc['env_h']['time_steps'])
+    soc_rbc = np.array(res_rbc['env_h']['electrical_storage_soc'])
+    action_rbc = np.array(res_rbc['env_h']['actions']['electrical_storage'])
 
     fig, ax1 = plt.subplots(figsize=(20, 6))
     ax1.set_title('Electrical Storage — Action Value and State of Charge')
@@ -284,7 +286,7 @@ def plot_electrical_storage(res_rbc, res_reg=None, save_path='electrical_storage
              label='electrical_storage action (RBC)', linewidth=1.0, color='tab:red')
 
     if res_reg is not None:
-        soc_reg    = np.array(res_reg['env_h']['electrical_storage_soc'])
+        soc_reg = np.array(res_reg['env_h']['electrical_storage_soc'])
         action_reg = np.array(res_reg['env_h']['actions']['electrical_storage'])
 
         ax1.plot(time_steps, soc_reg,
@@ -306,7 +308,6 @@ def plot_electrical_storage(res_rbc, res_reg=None, save_path='electrical_storage
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, format='png', dpi=300)
     print(f"Plot saved in: {save_path}")
-
 
 
 def evaluate_agent(agent_class, env):
@@ -379,8 +380,8 @@ def collect_data(agent_class, env):
     done = False
     rows = []
 
-    obs_names = env.observation_names[0]     
-    act_names = env.action_names[0]           
+    obs_names = env.observation_names[0]
+    act_names = env.action_names[0]
 
     while not done:
         actions = agent.predict(obs)
@@ -394,25 +395,25 @@ def collect_data(agent_class, env):
 
         row = {
             # Observations
-            "hour":                   get_obs("hour"),
-            "indoor_temp":            get_obs("indoor_dry_bulb_temperature"),
-            "cooling_setpoint":       get_obs("indoor_dry_bulb_temperature_cooling_set_point"),
-            "outdoor_temp":           get_obs("outdoor_dry_bulb_temperature"),
-            "outdoor_temp_predicted": get_obs("outdoor_dry_bulb_temperature_predicted_1"),
-            "cooling_demand":         get_obs("cooling_demand"),
-            "elec_price":             get_obs("electricity_pricing"),
-            "carbon_intensity":       get_obs("carbon_intensity"),
-            "solar_generation":       get_obs("solar_generation"),
-            "occupant_count":         get_obs("occupant_count"),
-            "electrical_storage_soc": get_obs("electrical_storage_soc"),
-            "dhw_storage_soc":        get_obs("dhw_storage_soc"),
-            "dhw_demand":             get_obs("dhw_demand"),
+            "hour":                    get_obs("hour"),
+            "indoor_temp":             get_obs("indoor_dry_bulb_temperature"),
+            "cooling_setpoint":        get_obs("indoor_dry_bulb_temperature_cooling_set_point"),
+            "outdoor_temp":            get_obs("outdoor_dry_bulb_temperature"),
+            "outdoor_temp_predicted":  get_obs("outdoor_dry_bulb_temperature_predicted_1"),
+            "cooling_demand":          get_obs("cooling_demand"),
+            "elec_price":              get_obs("electricity_pricing"),
+            "carbon_intensity":        get_obs("carbon_intensity"),
+            "solar_generation":        get_obs("solar_generation"),
+            "occupant_count":          get_obs("occupant_count"),
+            "electrical_storage_soc":  get_obs("electrical_storage_soc"),
+            "dhw_storage_soc":         get_obs("dhw_storage_soc"),
+            "dhw_demand":              get_obs("dhw_demand"),
             # Actions
-            "cooling_device":  get_act("cooling_device"),
-            "dhw_storage":      get_act("dhw_storage"),
-            "electrical_storage":  get_act("electrical_storage"),
+            "cooling_device":          get_act("cooling_device"),
+            "dhw_storage":             get_act("dhw_storage"),
+            "electrical_storage":      get_act("electrical_storage"),
             # Reward
-            "reward": rewards[0],
+            "reward":                  rewards[0],
         }
 
         rows.append(row)
@@ -422,11 +423,58 @@ def collect_data(agent_class, env):
     df = pd.DataFrame(rows)
     return df
 
+
+def collect_data_new_rbc(env):
+    
+    agent = LimeGuidedRBC(env)
+    obs, _ = env.reset()
+    done = False
+    rows = []
+
+    obs_names = env.observation_names[0]
+    act_names = env.action_names[0]
+
+    while not done:
+        actions = agent.predict(obs)
+        next_obs, rewards, terminated, truncated, info = env.step(actions)
+
+        def get_obs(name):
+            return obs[0][obs_names.index(name)] if name in obs_names else None
+
+        def get_act(name):
+            return actions[0][act_names.index(name)] if name in act_names else None
+
+        row = {
+            # Observations
+            "hour":                    get_obs("hour"),
+            "indoor_temp":             get_obs("indoor_dry_bulb_temperature"),
+            "cooling_setpoint":        get_obs("indoor_dry_bulb_temperature_cooling_set_point"),
+            "outdoor_temp":            get_obs("outdoor_dry_bulb_temperature"),
+            "elec_price":              get_obs("electricity_pricing"),
+            "solar_generation":        get_obs("solar_generation"),
+            "dhw_storage_soc":         get_obs("dhw_storage_soc"),
+            "dhw_demand":              get_obs("dhw_demand"),
+            # Actions
+            "cooling_device":          get_act("cooling_device"),
+            "dhw_storage":             get_act("dhw_storage"),
+            "electrical_storage":      get_act("electrical_storage"),
+            # Reward
+            "reward":                  rewards[0],
+        }
+
+        rows.append(row)
+        obs = next_obs
+        done = terminated or truncated
+
+    df = pd.DataFrame(rows)
+    return df
+
+
 def main():
     # Same configuration as main_rbc.py for consistency
     conf = Config()
     args = conf.args
-    
+
     if args.data is None:
         args.data = 'citylearn_challenge_2023_phase_1'
 
@@ -434,7 +482,7 @@ def main():
     if args.custom:
         schema = select_env_config(args.data)
     else:
-        schema = default_env_config(args.data) # type: ignore
+        schema = default_env_config(args.data)  # type: ignore
 
     print(f"Start evaluation with dataset: {args.data}")
 
@@ -454,11 +502,11 @@ def main():
     # ── Linear Regressor evaluation ───────────────────────────────────
     env_reg = CityLearnEnv(schema=schema, central_agent=True)
     reg_agent = LinearRegressorAgent(
-        env          = env_reg,
-        trained_models  = trained_models,
-        trained_features = trained_features,
-        mean         = mean,
-        std          = std,
+        env=env_reg,
+        trained_models=trained_models,
+        trained_features=trained_features,
+        mean=mean,
+        std=std,
     )
     print("Running LinearRegressorAgent...")
     results_reg = evaluate_agent(reg_agent, env_reg)
@@ -477,11 +525,24 @@ def main():
         save_path='evaluation_plots/electrical_storage.png'
     )
 
-    # ── CSV export (RBC only, as before) ──────────────────────────────
-    df = collect_data(AdvancedRBC, env_rbc)
-    df.to_csv('results/advanced_rbc_results.csv', index=False)
-    print(df.shape)
-    print("CSV file was successfully saved")
+    # ── CSV export — AdvancedRBC ──────────────────────────────────────
+    # env_rbc ha già eseguito l'episodio in evaluate_agent, serve un env fresco
+    env_csv_adv = CityLearnEnv(schema=schema, central_agent=True)
+    df_adv = collect_data(AdvancedRBC, env_csv_adv)
+    os.makedirs('results', exist_ok=True)
+    df_adv.to_csv('results/advanced_rbc_results.csv', index=False)
+    print(f"AdvancedRBC CSV saved — shape: {df_adv.shape}")
+
+    # ── CSV export — LimeGuidedRBC ────────────────────────────────────
+    # Env dedicato: collect_data_new_rbc resetta internamente l'env,
+    # ma è comunque buona pratica passarne uno fresco per evitare
+    # interferenze con lo stato residuo di episodi precedenti.
+    env_csv_lime = CityLearnEnv(schema=schema, central_agent=True)
+    df_lime = collect_data_new_rbc(env_csv_lime)
+    df_lime.to_csv('results/lime_rbc_results.csv', index=False)
+    print(f"LimeGuidedRBC CSV saved — shape: {df_lime.shape}")
+    print("CSV files were successfully saved")
+
 
 if __name__ == '__main__':
     main()

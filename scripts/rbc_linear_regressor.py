@@ -10,16 +10,21 @@ import os
 # 1. CONFIGURATION
 # ──────────────────────────────────────────────
 
-DATA_PATH  = "results/advanced_rbc_results.csv"
+DATA_PATH  = "results/lime_rbc_results.csv"
 OUTPUT_DIR = "linear_regressor_results"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # All feature columns (observations) present in the dataset
+# FEATURE_COLS = [
+#     "hour", "indoor_temp", "cooling_setpoint", "outdoor_temp",
+#     "outdoor_temp_predicted", "cooling_demand", "elec_price",
+#     "carbon_intensity", "solar_generation", "occupant_count",
+#     "electrical_storage_soc", "dhw_storage_soc", "dhw_demand"
+# ]
+
 FEATURE_COLS = [
     "hour", "indoor_temp", "cooling_setpoint", "outdoor_temp",
-    "outdoor_temp_predicted", "cooling_demand", "elec_price",
-    "carbon_intensity", "solar_generation", "occupant_count",
-    "electrical_storage_soc", "dhw_storage_soc", "dhw_demand"
+    "elec_price","solar_generation", "dhw_storage_soc", "dhw_demand"
 ]
 
 TARGET_COLS = ["cooling_device", "dhw_storage", "electrical_storage"]
@@ -28,18 +33,15 @@ TARGET_COLS = ["cooling_device", "dhw_storage", "electrical_storage"]
 # only the observations that the controller actually evaluates for each action.
 DOMAIN_FEATURES: dict[str, list[str]] = {
     "cooling_device": [
-        "hour", "indoor_temp", "cooling_setpoint",
-        "outdoor_temp", "outdoor_temp_predicted",
-        "cooling_demand", "elec_price", "carbon_intensity",
-        "solar_generation", "occupant_count",
+        "indoor_temp", "cooling_setpoint",
+        "outdoor_temp", "solar_generation",
     ],
     "dhw_storage": [
         "hour", "dhw_storage_soc", "dhw_demand",
         "elec_price", "solar_generation",
     ],
     "electrical_storage": [
-        "hour", "electrical_storage_soc",
-        "solar_generation", "elec_price",
+        "hour","solar_generation", "elec_price",
     ],
 }
 
